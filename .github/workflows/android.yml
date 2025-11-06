@@ -3,12 +3,14 @@ name: Android CI
 on:
   push:
   pull_request:
-   workflow_dispatch:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Java 17
@@ -30,20 +32,22 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          restore-keys: ${{ runner.os }}-gradle-
 
-      - name: local.properties (API key)
-        run: |
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> local.properties
+      - name: Create local.properties with API key
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > local.properties
 
-      - name: Grant gradlew execute
-        run: chmod +x gradlew
+      - name: Setup Gradle 8.4
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.4
 
       - name: Build Debug APK + Lint + Unit tests
-        run: ./gradlew clean :app:assembleDebug :app:lintDebug test
+        run: |
+          gradle -v
+          gradle clean :app:assembleDebug :app:lintDebug test
 
-      - name: Publicar APK como artefacto
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: LouieRobot-debug
